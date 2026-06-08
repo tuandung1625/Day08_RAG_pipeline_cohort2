@@ -1,204 +1,183 @@
-# Bài Tập Nhóm — Search Engine / RAG Chatbot
+# Group Project - RAG Chatbot & Evaluation
+
+Nhóm xây dựng hệ thống RAG trả lời câu hỏi về pháp luật Việt Nam liên quan đến ma túy và tin tức liên quan, có citation và có pipeline đánh giá.
 
 ## Mục Tiêu
 
-Sau khi hoàn thành bài cá nhân, nhóm ngồi lại để xây dựng **1 trong 2 sản phẩm**:
-
----
-
-## Yêu cầu 1:  Sản phẩm nhóm RAG Chatbot
-
-Xây dựng chatbot trả lời câu hỏi về pháp luật ma tuý và tin tức liên quan.
-
-**Yêu cầu:**
-- Giao diện chat (Streamlit / Gradio / Chainlit)
-- Trả lời có citation (dựa trên Task 10)
-- Hỗ trợ follow-up questions (conversation memory)
-- Hiển thị source documents đã dùng
-
-**Stack gợi ý:**
-```
-Chainlit/Streamlit → Retrieval (Task 9) → Generation (Task 10) → Display
-```
-
----
-
-## Yêu cầu 2: RAG Evaluation Pipeline
-
-Sử dụng **1 trong 3 framework** sau để evaluate pipeline RAG của nhóm:
-
-### Framework lựa chọn
-
-| Framework | Cài đặt | Đặc điểm |
-|-----------|---------|-----------|
-| [DeepEval](https://github.com/confident-ai/deepeval) | `pip install deepeval` | Nhiều metric built-in, dễ integrate với pytest |
-| [RAGAS](https://github.com/explodinggradients/ragas) | `pip install ragas` | Chuẩn industry cho RAG eval, 3 trục chính |
-| [TruLens](https://github.com/truera/trulens) | `pip install trulens` | Dashboard UI, feedback functions mạnh |
-
-### Yêu cầu Evaluation
-
-1. **Tạo Golden Dataset** — tối thiểu 15 cặp Q&A (question, expected_answer, expected_context)
-2. **Chạy evaluation** trên toàn bộ golden dataset với các metrics sau:
-   - **Faithfulness** — câu trả lời có bám đúng context không?
-   - **Answer Relevance** — câu trả lời có đúng câu hỏi không?
-   - **Context Recall** — retriever có lấy đủ evidence không?
-   - **Context Precision** — trong context lấy về, bao nhiêu % thực sự hữu ích?
-3. **So sánh A/B** — chạy eval trên ít nhất 2 config khác nhau (ví dụ: có reranking vs không reranking, hoặc hybrid vs dense-only)
-4. **Báo cáo** — bảng điểm + phân tích worst performers + đề xuất cải tiến
-
-### Code mẫu — DeepEval
-
-```python
-from deepeval import evaluate
-from deepeval.metrics import (
-    FaithfulnessMetric,
-    AnswerRelevancyMetric,
-    ContextualRecallMetric,
-    ContextualPrecisionMetric,
-)
-from deepeval.test_case import LLMTestCase
-
-# Tạo test cases từ golden dataset
-test_cases = []
-for item in golden_dataset:
-    result = rag_pipeline.generate_with_citation(item["question"])
-    test_case = LLMTestCase(
-        input=item["question"],
-        actual_output=result["answer"],
-        expected_output=item["expected_answer"],
-        retrieval_context=[c["content"] for c in result["sources"]],
-    )
-    test_cases.append(test_case)
-
-# Chạy evaluation
-metrics = [
-    FaithfulnessMetric(threshold=0.7),
-    AnswerRelevancyMetric(threshold=0.7),
-    ContextualRecallMetric(threshold=0.7),
-    ContextualPrecisionMetric(threshold=0.7),
-]
-
-results = evaluate(test_cases, metrics)
-```
-
-### Code mẫu — RAGAS
-
-```python
-from ragas import evaluate
-from ragas.metrics import (
-    faithfulness,
-    answer_relevancy,
-    context_recall,
-    context_precision,
-)
-from datasets import Dataset
-
-# Chuẩn bị data
-eval_data = {
-    "question": [],
-    "answer": [],
-    "contexts": [],
-    "ground_truth": [],
-}
-
-for item in golden_dataset:
-    result = rag_pipeline.generate_with_citation(item["question"])
-    eval_data["question"].append(item["question"])
-    eval_data["answer"].append(result["answer"])
-    eval_data["contexts"].append([c["content"] for c in result["sources"]])
-    eval_data["ground_truth"].append(item["expected_answer"])
-
-dataset = Dataset.from_dict(eval_data)
-
-# Chạy evaluation
-result = evaluate(
-    dataset,
-    metrics=[faithfulness, answer_relevancy, context_recall, context_precision],
-)
-print(result.to_pandas())
-```
-
-### Code mẫu — TruLens
-
-```python
-from trulens.apps.custom import TruCustomApp, instrument
-from trulens.core import Feedback
-from trulens.providers.openai import OpenAI as TruOpenAI
-
-provider = TruOpenAI()
-
-# Define feedback functions
-f_faithfulness = Feedback(provider.groundedness_measure_with_cot_reasons).on_output()
-f_relevance = Feedback(provider.relevance).on_input_output()
-f_context_relevance = Feedback(provider.context_relevance).on_input()
-
-# Wrap RAG pipeline
-tru_rag = TruCustomApp(
-    rag_pipeline,
-    app_name="DrugLaw_RAG",
-    feedbacks=[f_faithfulness, f_relevance, f_context_relevance],
-)
-
-# Run evaluation
-with tru_rag as recording:
-    for item in golden_dataset:
-        rag_pipeline.generate_with_citation(item["question"])
-
-# View dashboard
-from trulens.dashboard import run_dashboard
-run_dashboard()
-```
-
-### Deliverable Evaluation
-
-- [ ] File `group_project/evaluation/golden_dataset.json` — 15+ cặp Q&A
-- [ ] File `group_project/evaluation/eval_pipeline.py` — script chạy evaluation
-- [ ] File `group_project/evaluation/results.md` — bảng điểm + phân tích
-- [ ] So sánh A/B ít nhất 2 configs
-
----
-
-## Yêu Cầu Chung
-
-1. **Tích hợp pipeline** từ bài cá nhân của các thành viên
-2. **Demo hoạt động được** trong buổi trình bày (chạy local hoặc deploy)
-3. **Evaluation pipeline** chạy được và có báo cáo kết quả
-4. **Code push lên repository** chung của nhóm
-5. **README** mô tả kiến trúc và phân công (điền bên dưới)
-
----
+1. Tích hợp pipeline cá nhân thành retrieval/generation thống nhất.
+2. Cung cấp chatbot hoặc API demo cho câu hỏi pháp luật/tin tức.
+3. Trả lời có citation dựa trên nguồn retrieved.
+4. Đánh giá RAG bằng golden dataset và so sánh A/B config.
 
 ## Kiến Trúc Hệ Thống
 
-```
-[Vẽ diagram kiến trúc ở đây]
+```mermaid
+flowchart LR
+    U[User] --> UI[Chat UI: Streamlit/Chainlit]
+    UI --> G[Generation: Task 10]
+    G --> R[Retrieval Pipeline: Task 9]
+
+    R --> S[Semantic Search: Task 5]
+    R --> L[Lexical BM25: Task 6]
+    S --> M[RRF Merge + Rerank: Task 7]
+    L --> M
+    M --> C{Score threshold}
+    C -->|Good| CTX[Context chunks]
+    C -->|Low confidence| PI[PageIndex fallback: Task 8]
+    PI --> CTX
+
+    CTX --> RE[Reorder context]
+    RE --> LLM[OpenAI/Gemini]
+    LLM --> ANS[Answer with citations]
+    ANS --> UI
+
+    EVAL[Evaluation Pipeline] --> R
+    EVAL --> G
+    GOLDEN[Golden Dataset] --> EVAL
+    EVAL --> REPORT[Results report]
 ```
 
----
+## Thành Phần Chính
+
+| Thành phần | File/Thư mục | Vai trò |
+|---|---|---|
+| Data landing | `data/landing/` | PDF pháp luật và JSON bài báo gốc |
+| Standardized data | `data/standardized/` | Markdown sau chuyển đổi |
+| Vector index | `data/vector_store/drug_law_docs.json` | Local dense index fallback |
+| PageIndex cache | `data/pageindex_documents.json` | PageIndex document IDs, không chứa secret |
+| Retrieval | `src/task9_retrieval_pipeline.py` | Hybrid retrieval + fallback |
+| Generation | `src/task10_generation.py` | Reorder context + citation answer |
+| Golden dataset | `group_project/evaluation/golden_dataset.json` | Bộ câu hỏi đánh giá |
+| Eval script | `group_project/evaluation/eval_pipeline.py` | Chạy evaluation |
+| Eval report | `group_project/evaluation/results.md` | Báo cáo kết quả |
 
 ## Phân Công Công Việc
 
 | Thành viên | MSSV | Nhiệm vụ | Trạng thái |
-|-----------|------|----------|------------|
-| Nguyễn Quang Minh | 2A202600816 | Chatbot | Done |
-| Nguyễn Tuấn Dũng | 2A202600848 | Evaluation | Done |
-| | | | |
-| | | | |
+|---|---|---|---|
+| Nguyễn Quang Minh | 2A202600816 | Chatbot/RAG integration | Done |
+| Nguyễn Tuấn Dũng | 2A202600848 | Evaluation pipeline | Done |
+| Cần cập nhật | Cần cập nhật | UI polish, demo script, README final review | Pending |
+| Cần cập nhật | Cần cập nhật | Golden dataset mở rộng 15+ Q&A | Pending |
 
----
+## Luồng Retrieval & Generation
 
-## Hướng Dẫn Chạy
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Chat UI
+    participant Retrieve as Task 9 retrieve()
+    participant Hybrid as Semantic + BM25
+    participant PageIndex as PageIndex fallback
+    participant Gen as Task 10 generate_with_citation()
+    participant LLM as OpenAI/Gemini
 
-```bash
-# Cài đặt dependencies
-pip install -r requirements.txt
-
-# Chạy app
-streamlit run app.py
-# hoặc
-chainlit run app.py
+    User->>UI: Nhập câu hỏi
+    UI->>Gen: generate_with_citation(query)
+    Gen->>Retrieve: retrieve(query, top_k)
+    Retrieve->>Hybrid: semantic_search + lexical_search
+    Hybrid-->>Retrieve: ranked candidates
+    Retrieve->>Retrieve: RRF merge + rerank
+    alt score đủ tốt
+        Retrieve-->>Gen: hybrid context
+    else score thấp
+        Retrieve->>PageIndex: pageindex_search(query)
+        PageIndex-->>Gen: vectorless context
+    end
+    Gen->>Gen: reorder_for_llm + format_context
+    Gen->>LLM: prompt + context + citation rule
+    LLM-->>Gen: answer with citations
+    Gen-->>UI: answer + sources
+    UI-->>User: Hiển thị câu trả lời
 ```
 
----
+## Cài Đặt
 
-## Lưu ý: Hãy giữ lại repo này nếu như bạn học track 3 giai đoạn 2, chúng ta sẽ phát triển tiếp dự án lên knowledge graph để khắc phục các câu hỏi hóc búa khi có các câu hỏi khó.
+Từ root repo:
+
+```powershell
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Tạo `.env`:
+
+```env
+PAGEINDEX_API_KEY=your_pageindex_key
+GEMINI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key
+OPENAI_MODEL=gpt-4o-mini
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+## Chạy Demo Pipeline
+
+Chạy retrieval:
+
+```powershell
+venv\Scripts\python.exe -c "from src.task9_retrieval_pipeline import retrieve; print(retrieve('hình phạt ma túy', 3))"
+```
+
+Chạy generation có citation:
+
+```powershell
+venv\Scripts\python.exe -c "from src.task10_generation import generate_with_citation; print(generate_with_citation('Hình phạt tàng trữ ma túy?', 3)['answer'])"
+```
+
+Chạy PageIndex upload/query:
+
+```powershell
+venv\Scripts\python.exe src\task8_pageindex_vectorless.py
+```
+
+## Evaluation
+
+Deliverables hiện có:
+
+| File | Trạng thái | Ghi chú |
+|---|---|---|
+| `group_project/evaluation/golden_dataset.json` | Started | Cần mở rộng lên tối thiểu 15 Q&A |
+| `group_project/evaluation/eval_pipeline.py` | Started | Script đánh giá |
+| `group_project/evaluation/results.md` | Started | Cần điền metric thật sau khi chạy eval |
+
+Metrics cần báo cáo:
+
+| Metric | Ý nghĩa |
+|---|---|
+| Faithfulness | Câu trả lời có bám context không |
+| Answer Relevance | Câu trả lời có đúng câu hỏi không |
+| Context Recall | Retriever có lấy đủ evidence không |
+| Context Precision | Context lấy về có hữu ích không |
+
+Config A/B đề xuất:
+
+| Config | Mô tả |
+|---|---|
+| A | Hybrid retrieval: semantic + BM25 + RRF + rerank + PageIndex fallback |
+| B | Dense-only: semantic search không BM25/rerank |
+
+Chạy test liên quan:
+
+```powershell
+venv\Scripts\python.exe -m pytest tests/test_individual.py::TestTask8 tests/test_individual.py::TestTask9 tests/test_individual.py::TestTask10 -v
+```
+
+Kết quả gần nhất: `9 passed` cho Task 8-10 khi có network PageIndex.
+
+## Checklist Trước Khi Demo
+
+- [x] Dữ liệu pháp luật đã thu thập.
+- [x] Bài báo đã crawl.
+- [x] Markdown đã chuẩn hóa.
+- [x] Local vector index đã tạo.
+- [x] PageIndex documents đã upload và ready.
+- [x] Retrieval pipeline chạy được.
+- [x] Generation có citation chạy được với OpenAI/Gemini hoặc fallback extractive.
+- [x] Golden dataset đủ 15+ Q&A.
+- [x] `results.md` có bảng điểm evaluation thật.
+- [x] UI Streamlit/Chainlit được thêm nếu nhóm chọn chatbot demo.
+
+## Ghi Chú
+
+Không commit `.env` hoặc bất kỳ API key nào. File `data/pageindex_documents.json` chỉ chứa `doc_id`, tên file, trạng thái xử lý và số trang để tái sử dụng PageIndex index.
