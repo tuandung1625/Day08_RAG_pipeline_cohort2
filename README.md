@@ -527,8 +527,8 @@ run_dashboard()
 
 | Thành viên | MSSV | Nhiệm vụ | Trạng thái |
 |-----------|------|----------|------------|
-| | | | |
-| | | | |
+| Nguyễn Quang Minh | 2A202600816 | Chatbot | Done |
+| Nguyễn Tuấn Dũng | 2A202600848 | Evaluation | Done |
 | | | | |
 | | | | |
 

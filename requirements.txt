@@ -1,6 +1,7 @@
 # Core
 python-dotenv>=1.0.0
 requests>=2.31.0
+pip-system-certs>=5.3; sys_platform == "win32"
 
 # Task 2 - Crawling
 crawl4ai>=0.3.0

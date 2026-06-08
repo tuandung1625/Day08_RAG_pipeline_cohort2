@@ -1,0 +1,31 @@
+{
+  "documents": [
+    {
+      "doc_id": "pi-cmq5dnznj06iq01qx559r27vy",
+      "name": "73luat.pdf",
+      "path": "data/landing/legal/73luat.pdf",
+      "status": "completed",
+      "retrieval_ready": true,
+      "page_count": 31,
+      "last_error": "HTTPSConnectionPool(host='api.pageindex.ai', port=443): Max retries exceeded with url: /doc/pi-cmq5dnznj06iq01qx559r27vy/metadata/ (Caused by ProxyError('Unable to connect to proxy', NewConnectionError(\"HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\")))"
+    },
+    {
+      "doc_id": "pi-cmq5do15206is01qxdc0dp2po",
+      "name": "HOI DAP LUAT PHONG CHONG MA TUY.signed.pdf",
+      "path": "data/landing/legal/HOI DAP LUAT PHONG CHONG MA TUY.signed.pdf",
+      "status": "completed",
+      "retrieval_ready": true,
+      "page_count": 11,
+      "last_error": "HTTPSConnectionPool(host='api.pageindex.ai', port=443): Max retries exceeded with url: /doc/pi-cmq5do15206is01qxdc0dp2po/metadata/ (Caused by ProxyError('Unable to connect to proxy', NewConnectionError(\"HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\")))"
+    },
+    {
+      "doc_id": "pi-cmq5do39d06it01qxlvyefq4d",
+      "name": "Nghị-định-28-2026-NĐ-CP.pdf",
+      "path": "data/landing/legal/Nghị-định-28-2026-NĐ-CP.pdf",
+      "status": "completed",
+      "retrieval_ready": true,
+      "page_count": 40,
+      "last_error": "HTTPSConnectionPool(host='api.pageindex.ai', port=443): Max retries exceeded with url: /doc/pi-cmq5do39d06it01qxlvyefq4d/metadata/ (Caused by ProxyError('Unable to connect to proxy', NewConnectionError(\"HTTPSConnection(host='127.0.0.1', port=9): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\")))"
+    }
+  ]
+}
